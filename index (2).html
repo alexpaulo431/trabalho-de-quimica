@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bancada Bioquímica — Jogo Didático</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --ink:#16211f;
+    --paper:#f4f0e3;
+    --teal:#0f3d3e;
+    --teal-dark:#0a2a2b;
+    --amber:#e8a33d;
+    --coral:#d9583b;
+    --line: rgba(22,33,31,0.18);
+    --good:#3c7a4e;
+    --bad:#b23b2e;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html,body{
+    height:100%;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Source Serif 4', serif;
+  }
+
+  body{
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(22,33,31,0.07) 1px, transparent 0);
+    background-size: 22px 22px;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+
+  .stage{
+    width:100%;
+    max-width:760px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+    position:relative;
+    overflow:hidden;
+  }
+
+  .stage::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:6px;
+    background: repeating-linear-gradient(90deg, var(--teal) 0 26px, var(--amber) 26px 32px, var(--coral) 32px 38px, var(--teal) 38px 64px);
+    opacity:0.9;
+  }
+
+  header.topbar{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    padding:22px 28px 14px;
+    border-bottom:1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.06em;
+    color:var(--teal-dark);
+    text-transform:uppercase;
+  }
+
+  header.topbar .tag{
+    background:var(--teal);
+    color:var(--paper);
+    padding:3px 9px;
+  }
+
+  main{
+    padding:36px 28px 30px;
+    min-height:440px;
+    display:flex;
+    flex-direction:column;
+  }
+
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(28px, 5vw, 40px);
+    line-height:1.05;
+    color:var(--teal-dark);
+    letter-spacing:-0.01em;
+  }
+
+  h1 .accent{ color:var(--coral); }
+
+  .lede{
+    margin-top:14px;
+    font-size:17px;
+    line-height:1.55;
+    max-width:52ch;
+    color:#3a423f;
+  }
+
+  .crew{
+    margin-top:26px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--teal-dark);
+    border-top:1px dashed var(--line);
+    border-bottom:1px dashed var(--line);
+    padding:12px 0;
+  }
+  .crew span{ display:block; opacity:0.55; text-transform:uppercase; letter-spacing:0.08em; font-size:10px; margin-bottom:6px;}
+  .crew b{ font-weight:500; }
+
+  .btn{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    border:none;
+    cursor:pointer;
+    padding:14px 26px;
+    background:var(--teal);
+    color:var(--paper);
+    letter-spacing:0.01em;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+  .btn:hover{ background:var(--teal-dark); transform: translateY(-1px); }
+  .btn:active{ transform: translateY(0); }
+  .btn.secondary{ background:transparent; color:var(--teal-dark); border:1px solid var(--teal-dark); }
+  .btn.secondary:hover{ background:var(--teal-dark); color:var(--paper); }
+  .btn:disabled{ opacity:0.35; cursor:not-allowed; }
+
+  .start-actions{ margin-top:30px; display:flex; gap:12px; flex-wrap:wrap; }
+
+  /* ---- Round header (shared) ---- */
+  .round-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .round-title{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:20px;
+    color:var(--teal-dark);
+  }
+  .round-title small{
+    display:block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--coral);
+    margin-bottom:4px;
+  }
+
+  .stat-cluster{ display:flex; gap:18px; font-family:'IBM Plex Mono', monospace; font-size:13px; }
+  .stat-cluster .stat b{ display:block; font-size:18px; font-family:'Space Grotesk', sans-serif; color:var(--teal-dark);}
+  .stat-cluster .stat{ text-transform:uppercase; letter-spacing:0.06em; color:#5b625f; }
+
+  .flame-track{
+    height:8px;
+    background:#e3ddc9;
+    border:1px solid var(--line);
+    overflow:hidden;
+    margin-bottom:26px;
+  }
+  .flame-fill{
+    height:100%;
+    background: linear-gradient(90deg, var(--amber), var(--coral));
+    width:100%;
+    transition: width 1s linear;
+  }
+
+  /* ---- Round 1: molecule sort ---- */
+  .molecule-tray{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:24px;
+    min-height:52px;
+  }
+  .mol-card{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:10px 16px;
+    background:#fff;
+    border:1px solid var(--teal-dark);
+    color:var(--teal-dark);
+    cursor:pointer;
+    transition: all 0.12s ease;
+  }
+  .mol-card:hover{ background:var(--amber); border-color:var(--amber); }
+  .mol-card.selected{ background:var(--coral); border-color:var(--coral); color:#fff; }
+  .mol-card.gone{ opacity:0; pointer-events:none; transform:scale(0.8); }
+
+  .flask-grid{
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap:12px;
+  }
+  @media (min-width:520px){ .flask-grid{ grid-template-columns: repeat(4, 1fr); } }
+
+  .flask{
+    border:1px solid var(--teal-dark);
+    padding:16px 8px 14px;
+    text-align:center;
+    cursor:pointer;
+    background:#fff;
+    transition: all 0.12s ease;
+    position:relative;
+  }
+  .flask:hover{ background:#eee7d3; }
+  .flask .label{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:var(--teal-dark);
+  }
+  .flask .count{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--coral);
+    margin-top:6px;
+  }
+  .flask.flash-good{ background:var(--good); }
+  .flask.flash-good .label, .flask.flash-good .count{ color:#fff; }
+  .flask.flash-bad{ background:var(--bad); }
+  .flask.flash-bad .label, .flask.flash-bad .count{ color:#fff; }
+
+  /* ---- Round 2: quiz ---- */
+  .question{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:19px;
+    color:var(--teal-dark);
+    margin-bottom:20px;
+    line-height:1.35;
+  }
+  .options{ display:flex; flex-direction:column; gap:10px; }
+  .opt{
+    text-align:left;
+    font-family:'Source Serif 4', serif;
+    font-size:15px;
+    padding:13px 16px;
+    background:#fff;
+    border:1px solid var(--line);
+    cursor:pointer;
+    transition: all 0.12s ease;
+  }
+  .opt:hover{ border-color:var(--teal-dark); background:#eee7d3; }
+  .opt.correct{ background:var(--good); border-color:var(--good); color:#fff; }
+  .opt.wrong{ background:var(--bad); border-color:var(--bad); color:#fff; }
+  .opt:disabled{ cursor:default; }
+
+  .feedback{
+    margin-top:16px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--teal-dark);
+    min-height:18px;
+  }
+
+  .next-wrap{ margin-top:22px; }
+
+  /* ---- End screen ---- */
+  .report-line{
+    display:flex;
+    justify-content:space-between;
+    padding:10px 0;
+    border-bottom:1px dashed var(--line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+  }
+  .report-line b{ font-family:'Space Grotesk', sans-serif; font-size:15px; color:var(--teal-dark); }
+  .verdict{
+    margin-top:22px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:24px;
+    color:var(--coral);
+  }
+
+  .hidden{ display:none !important; }
+
+  footer.foot{
+    padding:14px 28px;
+    border-top:1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:#7b807d;
+    display:flex;
+    justify-content:space-between;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <header class="topbar">
+    <span>Projeto de Bioquímica</span>
+    <span class="tag">Laboratório Digital</span>
+  </header>
+
+  <main id="app">
+
+    <!-- SCREEN: START -->
+    <section id="screen-start">
+      <h1>Bancada <span class="accent">Bioquímica</span></h1>
+      <p class="lede">
+        Separe moléculas por classe e investigue relações entre alimentação e doenças.
+        Duas etapas, um relatório final. Bata o recorde da turma.
+      </p>
+      <div class="crew">
+        <span>Equipe responsável</span>
+        <b>Alex Paulo Ribeiro Junior · Kenedy Peixoto · Heberty · José Otávio</b>
+      </div>
+      <div class="start-actions">
+        <button class="btn" id="btn-start">Iniciar experimento →</button>
+      </div>
+    </section>
+
+    <!-- SCREEN: ROUND 1 -->
+    <section id="screen-r1" class="hidden">
+      <div class="round-head">
+        <div class="round-title">
+          <small>Etapa 1 de 2</small>
+          Classifique as moléculas
+        </div>
+        <div class="stat-cluster">
+          <div class="stat">Acertos<b id="r1-score">0</b></div>
+          <div class="stat">Tempo<b id="r1-timer">60s</b></div>
+        </div>
+      </div>
+      <div class="flame-track"><div class="flame-fill" id="r1-flame"></div></div>
+
+      <p class="lede" style="margin-top:0; margin-bottom:18px; font-size:14px;">
+        Toque na molécula e depois no frasco da classe correta.
+      </p>
+
+      <div class="molecule-tray" id="mol-tray"></div>
+
+      <div class="flask-grid" id="flask-grid"></div>
+    </section>
+
+    <!-- SCREEN: ROUND 2 -->
+    <section id="screen-r2" class="hidden">
+      <div class="round-head">
+        <div class="round-title">
+          <small id="r2-progress">Etapa 2 de 2 · Pergunta 1/8</small>
+          Alimentação &amp; doenças
+        </div>
+        <div class="stat-cluster">
+          <div class="stat">Acertos<b id="r2-score">0</b></div>
+        </div>
+      </div>
+      <div class="flame-track"><div class="flame-fill" id="r2-flame" style="width:12.5%"></div></div>
+
+      <div class="question" id="q-text"></div>
+      <div class="options" id="q-options"></div>
+      <div class="feedback" id="q-feedback"></div>
+      <div class="next-wrap">
+        <button class="btn hidden" id="btn-next-q">Próxima pergunta →</button>
+      </div>
+    </section>
+
+    <!-- SCREEN: END -->
+    <section id="screen-end" class="hidden">
+      <h1>Relatório <span class="accent">Final</span></h1>
+      <p class="lede">Resultado da bancada, registrado abaixo.</p>
+
+      <div style="margin-top:20px;">
+        <div class="report-line"><span>Classificação de moléculas</span><b id="rep-r1">0/9</b></div>
+        <div class="report-line"><span>Alimentação &amp; doenças</span><b id="rep-r2">0/8</b></div>
+        <div class="report-line"><span>Pontuação total</span><b id="rep-total">0/17</b></div>
+      </div>
+
+      <div class="verdict" id="verdict"></div>
+
+      <div class="start-actions">
+        <button class="btn" id="btn-restart">Refazer experimento</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <span>Bioquímica · Trabalho em grupo</span>
+    <span id="foot-status">pronto</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- DATA ----------
+  const MOLECULES = [
+    {name:"Glicose", cat:"carb"},
+    {name:"Amido", cat:"carb"},
+    {name:"Frutose", cat:"carb"},
+    {name:"Colágeno", cat:"prot"},
+    {name:"Queratina", cat:"prot"},
+    {name:"Hemoglobina", cat:"prot"},
+    {name:"Colesterol", cat:"lip"},
+    {name:"Triglicerídeo", cat:"lip"},
+    {name:"Ácido oleico", cat:"lip"},
+    {name:"Vitamina C", cat:"vit"},
+    {name:"Vitamina D", cat:"vit"},
+    {name:"Ferro", cat:"vit"},
+  ];
+
+  const FLASKS = [
+    {id:"carb", label:"Carboidratos"},
+    {id:"prot", label:"Proteínas"},
+    {id:"lip", label:"Lipídios"},
+    {id:"vit", label:"Vitaminas & Minerais"},
+  ];
+
+  const QUIZ = [
+    {q:"A falta prolongada de vitamina C na dieta está associada a qual doença?",
+     opts:["Escorbuto","Diabetes tipo 2","Bócio","Raquitismo"], a:0},
+    {q:"O consumo excessivo de açúcares simples é um fator de risco relevante para:",
+     opts:["Anemia ferropriva","Diabetes tipo 2","Cegueira noturna","Bócio"], a:1},
+    {q:"A deficiência de ferro na alimentação está diretamente ligada a:",
+     opts:["Osteoporose","Hipertensão","Anemia ferropriva","Escorbuto"], a:2},
+    {q:"A ingestão insuficiente de cálcio e vitamina D ao longo da vida favorece:",
+     opts:["Osteoporose","Bócio","Diabetes tipo 2","Anemia"], a:0},
+    {q:"O consumo elevado de gorduras saturadas está associado, entre outros fatores, a:",
+     opts:["Cegueira noturna","Escorbuto","Doenças cardiovasculares","Bócio"], a:2},
+    {q:"A carência de iodo na dieta pode causar:",
+     opts:["Bócio","Osteoporose","Anemia","Diabetes tipo 2"], a:0},
+    {q:"A deficiência de vitamina A está relacionada principalmente a:",
+     opts:["Hipertensão","Cegueira noturna","Bócio","Anemia"], a:1},
+    {q:"O excesso de sódio na alimentação é um fator associado a:",
+     opts:["Hipertensão","Escorbuto","Cegueira noturna","Osteoporose"], a:0},
+  ];
+
+  // ---------- STATE ----------
+  let state = {
+    pool: [],
+    selectedMol: null,
+    r1Score: 0,
+    r1Wrong: 0,
+    r1Timer: 60,
+    r1Interval: null,
+    quizOrder: [],
+    quizIndex: 0,
+    r2Score: 0,
+  };
+
+  // ---------- HELPERS ----------
+  function $(id){ return document.getElementById(id); }
+  function show(id){ $(id).classList.remove("hidden"); }
+  function hide(id){ $(id).classList.add("hidden"); }
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  // ---------- SCREEN SWITCH ----------
+  function goto(screen){
+    ["screen-start","screen-r1","screen-r2","screen-end"].forEach(hide);
+    show(screen);
+  }
+
+  // ---------- ROUND 1 ----------
+  function startRound1(){
+    state.pool = shuffle(MOLECULES);
+    state.selectedMol = null;
+    state.r1Score = 0;
+    state.r1Wrong = 0;
+    state.r1Timer = 60;
+    $("r1-score").textContent = "0";
+    $("r1-timer").textContent = "60s";
+    $("r1-flame").style.width = "100%";
+
+    renderFlasks();
+    renderTray();
+    goto("screen-r1");
+
+    clearInterval(state.r1Interval);
+    state.r1Interval = setInterval(()=>{
+      state.r1Timer--;
+      $("r1-timer").textContent = state.r1Timer + "s";
+      $("r1-flame").style.width = (state.r1Timer/60*100) + "%";
+      if(state.r1Timer<=0 || state.pool.length===0){
+        clearInterval(state.r1Interval);
+        endRound1();
+      }
+    },1000);
+  }
+
+  function renderFlasks(){
+    const grid = $("flask-grid");
+    grid.innerHTML = "";
+    FLASKS.forEach(f=>{
+      const div = document.createElement("div");
+      div.className = "flask";
+      div.dataset.id = f.id;
+      div.innerHTML = `<div class="label">${f.label}</div><div class="count">toque para depositar</div>`;
+      div.addEventListener("click", ()=>onFlaskClick(f.id, div));
+      grid.appendChild(div);
+    });
+  }
+
+  function renderTray(){
+    const tray = $("mol-tray");
+    tray.innerHTML = "";
+    if(state.pool.length===0){
+      endRound1();
+      return;
+    }
+    state.pool.forEach(m=>{
+      const card = document.createElement("div");
+      card.className = "mol-card";
+      card.textContent = m.name;
+      card.dataset.name = m.name;
+      card.addEventListener("click", ()=>onMoleculeClick(m, card));
+      tray.appendChild(card);
+    });
+  }
+
+  function onMoleculeClick(mol, el){
+    document.querySelectorAll(".mol-card").forEach(c=>c.classList.remove("selected"));
+    el.classList.add("selected");
+    state.selectedMol = mol;
+  }
+
+  function onFlaskClick(flaskId, flaskEl){
+    if(!state.selectedMol) return;
+    const correct = state.selectedMol.cat === flaskId;
+    flaskEl.classList.add(correct ? "flash-good" : "flash-bad");
+    setTimeout(()=>flaskEl.classList.remove("flash-good","flash-bad"), 350);
+
+    if(correct){
+      state.r1Score++;
+      $("r1-score").textContent = state.r1Score;
+    } else {
+      state.r1Wrong++;
+    }
+
+    state.pool = state.pool.filter(m=>m.name !== state.selectedMol.name);
+    state.selectedMol = null;
+    renderTray();
+
+    if(state.pool.length===0){
+      clearInterval(state.r1Interval);
+      endRound1();
+    }
+  }
+
+  function endRound1(){
+    clearInterval(state.r1Interval);
+    startRound2();
+  }
+
+  // ---------- ROUND 2 ----------
+  function startRound2(){
+    state.quizOrder = shuffle(QUIZ.map((_,i)=>i));
+    state.quizIndex = 0;
+    state.r2Score = 0;
+    $("r2-score").textContent = "0";
+    goto("screen-r2");
+    renderQuestion();
+  }
+
+  function renderQuestion(){
+    const idx = state.quizOrder[state.quizIndex];
+    const item = QUIZ[idx];
+    $("r2-progress").textContent = `Etapa 2 de 2 · Pergunta ${state.quizIndex+1}/${QUIZ.length}`;
+    $("r2-flame").style.width = ((state.quizIndex+1)/QUIZ.length*100) + "%";
+    $("q-text").textContent = item.q;
+    $("q-feedback").textContent = "";
+    hide("btn-next-q");
+
+    const optsWrap = $("q-options");
+    optsWrap.innerHTML = "";
+
+    const order = shuffle(item.opts.map((_,i)=>i));
+    order.forEach(optIndex=>{
+      const btn = document.createElement("button");
+      btn.className = "opt";
+      btn.textContent = item.opts[optIndex];
+      btn.addEventListener("click", ()=>onAnswer(optIndex, item.a, btn, optsWrap));
+      optsWrap.appendChild(btn);
+    });
+  }
+
+  function onAnswer(chosen, correctIdx, btn, wrap){
+    const buttons = wrap.querySelectorAll(".opt");
+    buttons.forEach(b=>b.disabled = true);
+
+    if(chosen === correctIdx){
+      btn.classList.add("correct");
+      state.r2Score++;
+      $("r2-score").textContent = state.r2Score;
+      $("q-feedback").textContent = "Correto — relação registrada no relatório.";
+    } else {
+      btn.classList.add("wrong");
+      buttons.forEach(b=>{
+        if(b.textContent === QUIZ[state.quizOrder[state.quizIndex]].opts[correctIdx]){
+          b.classList.add("correct");
+        }
+      });
+      $("q-feedback").textContent = "Incorreto — resposta certa destacada acima.";
+    }
+    show("btn-next-q");
+  }
+
+  $("btn-next-q").addEventListener("click", ()=>{
+    state.quizIndex++;
+    if(state.quizIndex >= QUIZ.length){
+      endGame();
+    } else {
+      renderQuestion();
+    }
+  });
+
+  // ---------- END ----------
+  function endGame(){
+    const total = state.r1Score + state.r2Score;
+    const max = MOLECULES.length + QUIZ.length;
+    $("rep-r1").textContent = `${state.r1Score}/${MOLECULES.length}`;
+    $("rep-r2").textContent = `${state.r2Score}/${QUIZ.length}`;
+    $("rep-total").textContent = `${total}/${max}`;
+
+    let verdict;
+    const pct = total/max;
+    if(pct >= 0.85) verdict = "Bioquímico(a) sênior.";
+    else if(pct >= 0.6) verdict = "Boa leitura de bancada.";
+    else if(pct >= 0.35) verdict = "Continue estudando as moléculas.";
+    else verdict = "Volte ao laboratório e revise o conteúdo.";
+    $("verdict").textContent = verdict;
+
+    goto("screen-end");
+  }
+
+  // ---------- WIRING ----------
+  $("btn-start").addEventListener("click", startRound1);
+  $("btn-restart").addEventListener("click", startRound1);
+
+})();
+</script>
+
+</body>
+</html>
